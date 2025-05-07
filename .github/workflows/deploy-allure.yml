@@ -5,28 +5,23 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🔄 Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: ⚙️ Set up Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'       # <— obrigatório na v3
-          java-version: '17'            # ajuste conforme seu projeto
+          distribution: 'temurin'    # especifica a distribuição JDK
+          java-version: '17'         # versão do Java
 
-      - name: 📦 Upload Allure report artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report
-          path: allure-report/
+      - name: ✅ Run tests and generate Allure report
+        run: |
+          ./gradlew clean test
+          allure generate build/allure-results --clean -o allure-report
 
       - name: ⚙️ Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -41,4 +36,4 @@ jobs:
 
       - name: 🌐 Display report URL
         run: |
-          echo "Allure Report: http://estatico-jj.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo "Allure Report: http://estatico-jj.s3-website-\${{ env.AWS_REGION }}.amazonaws.com"
