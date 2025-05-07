@@ -1,38 +1,50 @@
-name: Run Tests and Deploy Allure Report
+name: CI/CD Allure Report
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
-  test-and-deploy:
+  build-and-deploy:
+    name: 🧪 Build, Test & Deploy Allure
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: 🔄 Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Java
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'  # Ou a versão necessária para seu projeto
+      - name: ⚙️ Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'       # ou 'zulu', 'adopt' etc.
+          java-version: '17'            # ajuste conforme sua stack
 
-    - name: Run tests and generate Allure results
-      run: |
-        ./gradlew clean test              # Substitua conforme seu projeto
-        allure generate allure-results --clean -o allure-report
+      - name: ✅ Run tests and generate Allure report
+        run: |
+          ./gradlew clean test
+          allure generate build/allure-results --clean -o allure-report
 
-    - name: Install AWS CLI
-      run: |
-        sudo apt update && sudo apt install -y awscli
+      - name: 📦 Archive Allure report (for GH Actions artifacts)
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report
+          path: allure-report
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1             # Use a mesma do seu bucket
+      - name: ⚙️ Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1         # ajuste para a região do seu bucket
 
-    - name: Upload Allure report to S3
-      run: |
-        aws s3 sync allure-report/ s3://estatito-jj/ --delete
+      - name: 📤 Sync Allure report to S3
+        run: |
+          aws s3 sync allure-report/ s3://estatico-jj/ --delete --acl public-read
+
+      - name: 🌐 Display report URL
+        run: |
+          echo "Allure Report disponível em: http://estatico-jj.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
