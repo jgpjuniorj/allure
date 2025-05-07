@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   build-and-deploy:
-    name: 🧪 Build, Test & Deploy Allure
     runs-on: ubuntu-latest
 
     steps:
@@ -20,15 +19,15 @@ jobs:
       - name: ⚙️ Set up Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'       # ou 'zulu', 'adopt' etc.
-          java-version: '17'            # ajuste conforme sua stack
+          distribution: 'temurin'       # <— obrigatório na v3
+          java-version: '17'            # ajuste conforme seu projeto
 
       - name: ✅ Run tests and generate Allure report
         run: |
           ./gradlew clean test
           allure generate build/allure-results --clean -o allure-report
 
-      - name: 📦 Archive Allure report (for GH Actions artifacts)
+      - name: 📦 Archive Allure report
         uses: actions/upload-artifact@v3
         with:
           name: allure-report
@@ -39,7 +38,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1         # ajuste para a região do seu bucket
+          aws-region: us-east-1
 
       - name: 📤 Sync Allure report to S3
         run: |
@@ -47,4 +46,4 @@ jobs:
 
       - name: 🌐 Display report URL
         run: |
-          echo "Allure Report disponível em: http://estatico-jj.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
+          echo "Allure Report: http://estatico-jj.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
