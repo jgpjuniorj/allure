@@ -49,7 +49,7 @@ jobs:
 
       - name: 📤 Sync Allure report to S3
         run: |
-          aws s3 sync allure-report/ s3://estatico-jj/ --delete 
+          aws s3 sync allure-report/ s3://estatico-jj/ 
 
       - name: 🌐 Show report URL
         run: |
