@@ -41,5 +41,5 @@ jobs:
 
       - name: Upload report to S3
         run: |
-          aws s3 sync allure-report/ s3://estatico-jj/${{ matrix.environment }}/ 
+          aws s3 sync allure-report/ s3://estatico-jj/${{ matrix.environment }}/ --delete
           aws s3 sync allure-report/history/ s3://estatico-jj/${{ matrix.environment }}/history/ --delete
