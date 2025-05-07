@@ -29,7 +29,7 @@ jobs:
       - name: ✅ Run tests with Pytest
         run: |
           mkdir -p allure-results
-          pytest --alluredir=allure-results
+          pytest tests/ --alluredir=allure-results
 
       - name: 🖼️ Generate Allure HTML report
         run: allure generate allure-results --clean -o allure-report
