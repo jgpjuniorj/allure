@@ -11,10 +11,16 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
 
-      # ... your setup-java and test steps ...
+    steps:
+      - name: 🔄 Checkout repository
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'       # <— obrigatório na v3
+          java-version: '17'            # ajuste conforme seu projeto
 
       - name: 📦 Upload Allure report artifact
         uses: actions/upload-artifact@v4
