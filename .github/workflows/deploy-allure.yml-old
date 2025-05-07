@@ -54,4 +54,3 @@ jobs:
       - name: 🌐 Show report URL
         run: |
           echo "Allure Report disponível em: http://estatico-jj.s3-website-\${{ env.AWS_REGION }}.amazonaws.com"
-          
