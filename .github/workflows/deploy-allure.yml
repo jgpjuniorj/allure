@@ -1,27 +1,51 @@
-name: CI/CD Allure Report
+name: CI/CD Allure Report (Python)
 
 on:
   push:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  build-and-deploy:
+  test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: 🔄 Checkout repository
+        uses: actions/checkout@v3
 
-      - name: ⚙️ Set up Java
-        uses: actions/setup-java@v3
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v3
         with:
-          distribution: 'temurin'    # especifica a distribuição JDK
-          java-version: '17'         # versão do Java
+          python-version: '3.10'           # ou outra versão suportada
+      # Ação oficial para configurar Python no runner :contentReference[oaicite:1]{index=1}
 
-      - name: ✅ Run tests and generate Allure report
+      - name: 📥 Install dependencies
         run: |
-          ./gradlew clean test
-          allure generate build/allure-results --clean -o allure-report
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt   # inclua pytest e allure-pytest
+      # Instalando pytest e o adaptador Allure para Pytest :contentReference[oaicite:2]{index=2}
+
+      - name: ✅ Run tests with Pytest and generate Allure results
+        run: |
+          mkdir -p allure-results
+          pytest --alluredir=allure-results
+      # Executa todos os testes em tests/ e gera os artefatos para Allure :contentReference[oaicite:3]{index=3}
+
+      - name: 🖼️ Generate Allure HTML report
+        run: |
+          pip install allure-commandline      # instala o CLI do Allure
+          allure generate allure-results --clean -o allure-report
+      # Converte os resultados em um site estático Allure :contentReference[oaicite:4]{index=4}
+
+      - name: 📦 Archive report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+      # Guarda o relatório como artefato da build (opcional) :contentReference[oaicite:5]{index=5}
 
       - name: ⚙️ Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -29,11 +53,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+      # Configurações AWS oficiais para actions :contentReference[oaicite:6]{index=6}
 
       - name: 📤 Sync Allure report to S3
         run: |
           aws s3 sync allure-report/ s3://estatico-jj/ --delete --acl public-read
+      # Publica o site estático no bucket configurado :contentReference[oaicite:7]{index=7}
 
-      - name: 🌐 Display report URL
+      - name: 🌐 Show report URL
         run: |
-          echo "Allure Report: http://estatico-jj.s3-website-\${{ env.AWS_REGION }}.amazonaws.com"
+          echo "Allure Report disponível em: http://estatico-jj.s3-website-${{ env.AWS_REGION }}.amazonaws.com"
