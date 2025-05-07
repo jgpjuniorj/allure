@@ -26,6 +26,7 @@ Editar
 
 Configure seu bucket S3 com a seguinte estrutura:
 
+
 s3://estatico-jj/
 ├── index.html # Painel central
 ├── QC/
@@ -120,6 +121,7 @@ Editar
   </ul>
 </body>
 </html>
+
 🧹 Manutenção do Histórico
 O Allure mantém até 20 execuções anteriores no histórico. Certifique-se de:
 
