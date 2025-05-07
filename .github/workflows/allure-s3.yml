@@ -1,34 +1,51 @@
-name: Run Tests and Deploy Allure Report
+name: CI/CD Allure Report by Environment
 
 on:
   push:
     branches: [main]
 
 jobs:
-  test:
+  test-and-deploy:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        environment: [QC, UAT, PRD]  # 3 variações de ambiente :contentReference[oaicite:14]{index=14} :contentReference[oaicite:15]{index=15}
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: 🔄 Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Java
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
 
-    - name: Run tests with Allure
-      run: |
-        ./gradlew clean test
-        allure generate build/allure-results --clean -o allure-report
+      - name: 📥 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - name: 🚀 Install Allure CLI
+        run: npm install -g allure-commandline
 
-    - name: Upload report to S3
-      run: |
-        aws s3 sync allure-report/ s3://${{ secrets.S3_BUCKET_NAME }}/ --delete
+      - name: ✅ Run tests for ${{ matrix.environment }}
+        run: |
+          mkdir -p allure-results
+          pytest tests/ --alluredir=allure-results --env ${{ matrix.environment }}
+          # Passe --env se seus testes suportarem variáveis de ambiente :contentReference[oaicite:16]{index=16}
+
+      - name: 🖼️ Generate Allure HTML report
+        run: |
+          allure generate allure-results --clean -o allure-report
+
+      - name: ⚙️ Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: 📤 Sync report to S3 prefix
+        run: |
+          aws s3 sync allure-report/ s3://estatico-jj/${{ matrix.environment }}/ --delete
