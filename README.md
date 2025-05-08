@@ -6,19 +6,16 @@ Este projeto automatiza a execução de testes com **pytest** e **Allure**, mant
 
 ## 📁 Estrutura do Projeto
 
+```bash
 .
-├── tests/ # Diretório com os testes
-├── conftest.py # Configuração do pytest
-├── requirements.txt # Dependências do projeto
+├── tests/                  # Casos de teste
+├── conftest.py            # Configuração do pytest
+├── requirements.txt       # Dependências
 ├── .github/
-│ └── workflows/
-│ └── allure-report.yml # Workflow do GitHub Actions
-├── index.html # Painel central com links para os relatórios
-└── README.md # Este arquivo
-
-yaml
-Copiar
-Editar
+│   └── workflows/
+│       └── allure-report.yml  # Pipeline CI/CD
+├── index.html             # Painel central
+└── README.md
 
 ---
 
@@ -28,64 +25,77 @@ Configure seu bucket S3 com a seguinte estrutura:
 
 
 s3://estatico-jj/
-├── index.html # Painel central
+├── index.html            # Painel principal
 ├── QC/
-│ ├── index.html # Relatório do ambiente QC
-│ └── history/ # Histórico do ambiente QC
+│   ├── index.html        # Relatório QC
+│   └── history/          # Histórico QC (últimas 20 execuções)
 ├── UAT/
-│ ├── index.html # Relatório do ambiente UAT
-│ └── history/ # Histórico do ambiente UAT
+│   ├── index.html        # Relatório UAT
+│   └── history/          # Histórico UAT
 └── PRD/
-├── index.html # Relatório do ambiente PRD
-└── history/ # Histórico do ambiente PRD
-
-yaml
-Copiar
-Editar
+    ├── index.html        # Relatório PRD
+    └── history/          # Histórico PRD
 
 ---
 
-## ⚙️ Configuração do Ambiente
-
-### 1. Instalar Dependências
-
-Instale as dependências necessárias:
-
-```bash
-pip install -r requirements.txt
-2. Instalar o Allure Commandline
-Siga as instruções oficiais para instalar o Allure CLI: Allure Installation Guide
-
-🧪 Executando Testes Localmente
-Para executar os testes e gerar o relatório Allure com histórico:
-
+⚙️ Configuração
+1. Instalação de Dependências
 bash
-Copiar
-Editar
-# Executar os testes
+pip install -r requirements.txt
+2. Allure CLI
+Siga o guia oficial de instalação.
+
+🧪 Execução Local
+bash
+# Executar testes para ambiente QC
 pytest tests/ --alluredir=allure-results --env QC
 
-# Copiar o histórico anterior (se existir)
+# Preservar histórico
 cp -r allure-report/history allure-results/history
 
-# Gerar o relatório Allure
+# Gerar relatório
 allure generate allure-results --clean -o allure-report
 
-# Abrir o relatório no navegador
+# Visualizar relatório
 allure open allure-report
-🤖 Integração com GitHub Actions
-O workflow do GitHub Actions (.github/workflows/allure-report.yml) automatiza:
+🤖 GitHub Actions (.github/workflows/allure-report.yml)
+yaml
+name: Allure Report
 
-Execução dos testes para cada ambiente (QC, UAT, PRD)
+on: [push]
 
-Manutenção do histórico de execuções
-
-Geração do relatório Allure
-
-Publicação do relatório e histórico no AWS S3
-
-Variáveis de Ambiente Necessárias
-Configure as seguintes variáveis de ambiente no GitHub Secrets:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [QC, UAT, PRD]
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Run Tests
+      run: |
+        pytest tests/ --alluredir=allure-results --env ${{ matrix.env }}
+    
+    - name: Upload to S3
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        aws s3 sync allure-report s3://estatico-jj/${{ matrix.env }} --delete
+🔒 Variáveis de Ambiente
+Configure no GitHub Secrets:
 
 AWS_ACCESS_KEY_ID
 
@@ -93,62 +103,26 @@ AWS_SECRET_ACCESS_KEY
 
 AWS_DEFAULT_REGION
 
-📊 Visualizando o Histórico
-No relatório Allure:
-
-Acesse a aba "History" para visualizar o histórico de execuções de cada teste.
-
-Acesse a aba "Overview" para visualizar gráficos de tendências, como o número de testes passados, falhados e com erro ao longo do tempo.
-
-🖥️ Painel Central
-O arquivo index.html na raiz do bucket S3 fornece um painel centralizado com links para os relatórios de cada ambiente:
-
+📊 Painel Central (index.html)
 html
-Copiar
-Editar
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Painel de Relatórios Allure</title>
+    <meta charset="UTF-8">
+    <title>Relatórios Allure</title>
 </head>
 <body>
-  <h1>Painel de Relatórios Allure</h1>
-  <ul>
-    <li><a href="/QC/index.html">Relatório QC</a></li>
-    <li><a href="/UAT/index.html">Relatório UAT</a></li>
-    <li><a href="/PRD/index.html">Relatório PRD</a></li>
-  </ul>
+    <h1>Ambientes</h1>
+    <ul>
+        <li><a href="/QC/index.html">QC</a></li>
+        <li><a href="/UAT/index.html">UAT</a></li>
+        <li><a href="/PRD/index.html">PRD</a></li>
+    </ul>
 </body>
 </html>
+📚 Recursos Úteis
+Documentação Allure
 
-🧹 Manutenção do Histórico
-O Allure mantém até 20 execuções anteriores no histórico. Certifique-se de:
+Configurar Hospedagem S3
 
-Copiar a pasta history do relatório anterior para allure-results/history antes de gerar um novo relatório.
-
-Sincronizar a pasta history atualizada de volta para o S3 após a geração do relatório.
-
-📄 Referências
-Documentação Oficial do Allure
-
-Allure Report com Histórico no AWS S3
-
-Integração do Allure com GitHub Actions
-
-Para mais informações ou dúvidas, sinta-se à vontade para abrir uma issue ou entrar em contato.
-
-yaml
-Copiar
-Editar
-
----
-
-### ✅ Dicas para Visualização no GitHub
-
-- **Preview no VS Code**: Utilize a extensão "Markdown Preview Enhanced" ou pressione `Ctrl+Shift+V` para visualizar o README formatado.
-- **Preview no GitHub**: Ao subir o arquivo para o repositório, o GitHub renderizará automaticamente o Markdown, mantendo a aparência organizada.
-
-Se precisar de mais assistência ou ajustes específicos, estou à disposição para ajudar!
-::contentReference[oaicite:0]{index=0}
- 
+GitHub Actions para AWS
