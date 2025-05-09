@@ -123,6 +123,3 @@ html
 📚 Recursos Úteis
 Documentação Allure
 
-Configurar Hospedagem S3
-
-GitHub Actions para AWS
